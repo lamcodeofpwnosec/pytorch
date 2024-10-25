@@ -1,6 +1,7 @@
 # mypy: allow-untyped-defs
 import contextlib
 import logging
+import warnings
 
 import torch
 import torch._subclasses.functional_tensor
@@ -137,10 +138,15 @@ def cond(pred, true_fn, false_fn, operands):
     )
 
     if isinstance(pred, (bool, int, float)):
-        log.warning(
-            "Pred is a Python constant. When used with torch.cond, it executes only one of the branches."
-            " If you want torch.cond to perserve two branches, please make the predicate a boolean tensor or a SymBool."
-        )
+        # This is the non-strict export case. Strict export and torch.compile are
+        # handled above in dynamo.
+        if torch.compiler.is_compiling():
+            warnings.warn(
+                "Pred is a Python constant. When used with torch.cond, it specializes on one of the branches."
+                " If you want torch.cond to preserve two branches, please make the predicate a boolean tensor or a SymBool.",
+                UserWarning,
+            )
+        # This is the eager case. We can just run the true or false branch.
         if pred:
             return true_fn(*operands)
         else:
