@@ -369,6 +369,7 @@ def init_backend_registration():
             "xpu",
             TritonScheduling,
             PythonWrapperCodegen,
+            CppWrapperGpu,
         )
 
     private_backend = torch._C._get_privateuse1_backend_name()
